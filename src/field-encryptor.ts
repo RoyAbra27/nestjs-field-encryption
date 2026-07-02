@@ -47,13 +47,15 @@ export class FieldEncryptor {
   }
 
   async decryptTagged(obj: any, tenantId: string | number, maxDepth = ENCRYPT_MAX_DEPTH): Promise<void> {
+    this.assertNoTaggedFieldsBeyondMaxDepth(obj, maxDepth);
     let dekPromise: Promise<Buffer> | null = null;
     const getDek: GetDek = () => (dekPromise ??= this.keyProvider.getDataKey(tenantId));
     await this.walkAndDecrypt(obj, getDek, 0, maxDepth);
   }
 
-  // Runs once at depth 0 so a tagged field beyond maxDepth throws instead of
-  // being silently skipped, which would otherwise write plaintext.
+  // Runs once up front so a tagged field beyond maxDepth throws instead of
+  // being silently skipped by the walk -- which would write plaintext on
+  // encrypt, or return ciphertext to the caller on decrypt.
   private assertNoTaggedFieldsBeyondMaxDepth(obj: any, maxDepth: number): void {
     const walk = (node: any, depth: number) => {
       if (Array.isArray(node)) {

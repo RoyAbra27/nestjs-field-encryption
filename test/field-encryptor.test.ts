@@ -130,6 +130,18 @@ describe('FieldEncryptor', () => {
     expect((outer.blob as any).secret).toEqual('top-secret');
   });
 
+  it('decryptTagged throws for a tagged field deeper than maxDepth instead of returning ciphertext (bug #7)', async () => {
+    const encryptor = new FieldEncryptor(fakeKeyProvider());
+    const company = Object.assign(new Company(), {
+      taxId: 'TAX-1',
+      contact: Object.assign(new Contact(), { ssn: '999-00-1111', publicNote: 'x' }),
+    });
+
+    await encryptor.encryptTagged(company, 'tenant-1');
+
+    await expect(encryptor.decryptTagged(company, 'tenant-1', 0)).rejects.toThrow(/exceeds maxDepth/);
+  });
+
   // --- // decryptTagged robustness (bug #1) // ---
 
   it.each([
