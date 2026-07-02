@@ -73,7 +73,9 @@ of pre-warming can build it on top of `EncryptionCache`.
   for the tenant, or if KMS returns no plaintext - callers should treat both
   as request-level failures (5xx), not silently skip encryption.
 - `FieldEncryptor.encryptTagged` throws if a tagged field is found beyond
-  `maxDepth`, rather than silently writing plaintext.
+  `maxDepth`, rather than silently writing plaintext. The Prisma extension's
+  `encryptWriteArgs` / `detectPlaintextTaggedColumns` apply the same guard to
+  registered columns nested beyond `maxDepth` in a write payload.
 - `DecryptInterceptor` swallows only two specific, expected conditions:
   excluded routes and tenant-resolution failures (e.g. no authenticated
   tenant on a public route). Any other error during decryption propagates.

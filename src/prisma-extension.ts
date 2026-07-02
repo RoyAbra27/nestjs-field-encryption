@@ -104,8 +104,31 @@ export function createFieldEncryptionExtension(
     }
   }
 
+  // Mirrors FieldEncryptor.assertNoTaggedFieldsBeyondMaxDepth: a registered
+  // column nested deeper than maxDepth must throw rather than being silently
+  // skipped (which would persist it as plaintext). Walks the finite write
+  // payload, so no cap is needed to terminate.
+  function assertRegisteredColumnsWithinDepth(model: string, record: Record<string, any>, level: number): void {
+    for (const [relation, childModel] of Object.entries(relationsFor(model))) {
+      for (const child of nestedChildRecords(record[relation])) {
+        const childLevel = level + 1;
+        if (childLevel > maxDepth) {
+          for (const column of registry[childModel] ?? []) {
+            if (stringSlot(child, column)) {
+              throw new Error(
+                `createFieldEncryptionExtension: registered column "${childModel}.${column}" is nested at depth ${childLevel} which exceeds maxDepth (${maxDepth}); increase maxDepth or flatten the write to avoid silently persisting it as plaintext`,
+              );
+            }
+          }
+        }
+        assertRegisteredColumnsWithinDepth(childModel, child, childLevel);
+      }
+    }
+  }
+
   function encryptWriteArgs(model: string, operation: EncryptedWriteOperation, args: WriteArgs, dek: Buffer): void {
     for (const record of dataRecordsFor(operation, args)) {
+      assertRegisteredColumnsWithinDepth(model, record, 0);
       if (isEncryptedModel(model)) encryptRecordColumns(model, record, dek);
       encryptNested(model, record, dek, 0);
     }
@@ -143,6 +166,7 @@ export function createFieldEncryptionExtension(
   function detectPlaintextTaggedColumns(model: string, operation: EncryptedWriteOperation, args: WriteArgs): string[] {
     const found = new Set<string>();
     for (const record of dataRecordsFor(operation, args)) {
+      assertRegisteredColumnsWithinDepth(model, record, 0);
       if (isEncryptedModel(model)) detectRecordColumns(model, record, '', found);
       detectNested(model, record, '', found, 0);
     }

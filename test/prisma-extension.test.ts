@@ -84,4 +84,36 @@ describe('createFieldEncryptionExtension', () => {
     expect(withoutDek.unencryptedColumns).toEqual(['taxId']);
     expect(argsWithoutDek.data.taxId).toEqual('TAX-7');
   });
+
+  // --- // over-depth guard (bug #3) // ---
+
+  const deepRegistry = { node: ['secret'] } as const;
+  const deepRelationMap = { node: { child: 'node' } };
+  const deeplyNestedArgs = () => ({
+    data: {
+      secret: 'level-0',
+      child: { create: { secret: 'level-1', child: { create: { secret: 'level-2' } } } },
+    },
+  });
+
+  it('throws instead of silently persisting a registered column nested beyond maxDepth', () => {
+    const { encryptWriteArgs } = createFieldEncryptionExtension(deepRegistry, deepRelationMap, 1);
+    const args = deeplyNestedArgs();
+
+    expect(() => encryptWriteArgs('node', 'create', args, dek)).toThrow(/exceeds maxDepth/);
+  });
+
+  it('detectPlaintextTaggedColumns also throws for a column nested beyond maxDepth', () => {
+    const { detectPlaintextTaggedColumns } = createFieldEncryptionExtension(deepRegistry, deepRelationMap, 1);
+
+    expect(() => detectPlaintextTaggedColumns('node', 'create', deeplyNestedArgs())).toThrow(/exceeds maxDepth/);
+  });
+
+  it('does not throw when nesting stays within maxDepth', () => {
+    const { encryptWriteArgs } = createFieldEncryptionExtension(deepRegistry, deepRelationMap, 5);
+    const args = deeplyNestedArgs();
+
+    expect(() => encryptWriteArgs('node', 'create', args, dek)).not.toThrow();
+    expect(args.data.child.create.child.create.secret).not.toEqual('level-2');
+  });
 });
