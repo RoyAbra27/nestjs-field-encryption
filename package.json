@@ -5,6 +5,10 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": ["dist"],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RoyAbra27/nestjs-field-encryption.git"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "jest",
