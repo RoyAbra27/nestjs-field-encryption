@@ -8,9 +8,11 @@ IV per encryption, base64-encoded as `IV || ciphertext`.
 - `encryptWithDek(data, dek)` - JSON-serializes `data`, encrypts, and
   prepends the IV.
 - `isEncryptedWithDek(value, dek)` - true only if `value` decrypts cleanly
-  under `dek`. Used to make encryption idempotent: a value that already
-  decrypts under the tenant's DEK is assumed to already be ciphertext and is
-  left untouched.
+  under `dek` and the plaintext parses as JSON. Used to make encryption
+  idempotent: a value that already decrypts to JSON under the tenant's DEK is
+  assumed to already be ciphertext and is left untouched. The JSON check
+  rejects arbitrary data whose CBC decrypt yields valid padding by chance,
+  which would otherwise be mistaken for ciphertext and left as plaintext.
 - `looksEncrypted(value)` - a DEK-free shape check (canonical base64,
   decodes to a multiple of the block size, at least two IV lengths long).
   Used where no DEK is in scope, e.g. detecting plaintext columns before a

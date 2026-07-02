@@ -17,8 +17,12 @@ export function encryptWithDek(data: unknown, dek: Buffer): string {
 }
 
 /**
- * True only when `value` decrypts cleanly under `dek`. Relies on one DEK per
- * tenant (no rotation): a clean decrypt means the value is already ours.
+ * True only when `value` decrypts cleanly under `dek` AND the plaintext parses
+ * as JSON. `encryptWithDek` always JSON.stringifies, so every genuine ciphertext
+ * is valid JSON; requiring that rejects arbitrary data whose CBC decrypt happens
+ * to yield valid PKCS#7 padding by chance (~1/256), which would otherwise be
+ * mistaken for an already-encrypted value and left as plaintext. Relies on one
+ * DEK per tenant (no rotation): a clean JSON decrypt means the value is ours.
  */
 export function isEncryptedWithDek(value: string, dek: Buffer): boolean {
   try {
@@ -27,8 +31,11 @@ export function isEncryptedWithDek(value: string, dek: Buffer): boolean {
     const iv = buf.subarray(0, DEK_IV_LENGTH) as Uint8Array;
     const encryptedText = buf.subarray(DEK_IV_LENGTH) as Uint8Array;
     const decipher = crypto.createDecipheriv(DEK_ALGORITHM, dek as unknown as Uint8Array, iv);
-    decipher.update(encryptedText);
-    decipher.final();
+    const decrypted = Buffer.concat([
+      decipher.update(encryptedText) as Uint8Array,
+      decipher.final() as Uint8Array,
+    ]);
+    JSON.parse(decrypted.toString());
     return true;
   } catch {
     return false;

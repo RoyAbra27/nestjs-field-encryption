@@ -36,6 +36,19 @@ describe('encryptWithDek / isEncryptedWithDek round trip', () => {
   it('rejects plaintext strings shorter than two IV lengths', () => {
     expect(isEncryptedWithDek('short', testDek)).toBe(false);
   });
+
+  it('rejects a value that decrypts cleanly but is not one of our JSON ciphertexts (bug #4)', () => {
+    // A payload encrypted under the DEK without going through encryptWithDek's
+    // JSON.stringify: it decrypts with valid padding but is not our format.
+    // Stands in for the chance-valid-padding false positive that would cause a
+    // genuine plaintext value to be treated as already-encrypted and skipped.
+    const iv = crypto.randomBytes(DEK_IV_LENGTH);
+    const cipher = crypto.createCipheriv(DEK_ALGORITHM, testDek, iv);
+    const enc = Buffer.concat([cipher.update(Buffer.from('this is not json at all')), cipher.final()]);
+    const nonJson = Buffer.concat([iv, enc]).toString('base64');
+
+    expect(isEncryptedWithDek(nonJson, testDek)).toBe(false);
+  });
 });
 
 describe('looksEncrypted', () => {
