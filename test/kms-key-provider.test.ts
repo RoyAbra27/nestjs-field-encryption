@@ -48,6 +48,14 @@ describe('KmsKeyProvider', () => {
     );
   });
 
+  it('throws when the decrypted DEK is not the AES-256 key length', async () => {
+    const kmsClient = makeKmsClient(Buffer.from('a'.repeat(16))); // 16 bytes, AES-128-sized
+    const keyStore = makeKeyStore(Buffer.from('ciphertext').toString('base64'));
+    const provider = new KmsKeyProvider(keyStore, { kmsClient });
+
+    await expect(provider.getDataKey('tenant-1')).rejects.toThrow(/32/);
+  });
+
   it('caches the decrypted DEK and skips KMS on the next call', async () => {
     const plaintext = Buffer.from('b'.repeat(32));
     const kmsClient = makeKmsClient(plaintext);

@@ -1,4 +1,5 @@
 import { DecryptCommand, KMSClient } from '@aws-sdk/client-kms';
+import { DEK_ALGORITHM, DEK_KEY_LENGTH } from './dek-cipher';
 import { EncryptionKeyProvider } from './key-provider';
 
 export interface EncryptedKeyStore {
@@ -68,6 +69,11 @@ export class KmsKeyProvider implements EncryptionKeyProvider {
       throw new Error(`KMS returned no plaintext for tenant ${tenantId}`);
     }
     const dek = Buffer.from(result.Plaintext as Uint8Array);
+    if (dek.length !== DEK_KEY_LENGTH) {
+      throw new Error(
+        `KMS returned a ${dek.length}-byte data key for tenant ${tenantId}; expected ${DEK_KEY_LENGTH} bytes for ${DEK_ALGORITHM}`,
+      );
+    }
 
     if (!skipCache && this.options.cache) {
       await this.options.cache.set(cacheKey, dek.toString('base64'), this.options.cacheTtlMs ?? DEFAULT_CACHE_TTL_MS);

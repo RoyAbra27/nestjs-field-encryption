@@ -2,6 +2,8 @@ import * as crypto from 'crypto';
 
 export const DEK_ALGORITHM = 'aes-256-cbc';
 export const DEK_IV_LENGTH = 16;
+/** aes-256-cbc requires a 32-byte key. */
+export const DEK_KEY_LENGTH = 32;
 
 const CANONICAL_BASE64 = /^[A-Za-z0-9+/]+={0,2}$/;
 
