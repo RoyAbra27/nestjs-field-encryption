@@ -1,6 +1,6 @@
 {
   "name": "nestjs-field-encryption",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Per-tenant field-level encryption for NestJS: AES-256-CBC + KMS envelope encryption, a @Encrypt() decorator, an HTTP pipe/interceptor pair, and a schema-agnostic Prisma write-encryption extension.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
