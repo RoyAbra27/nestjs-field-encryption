@@ -1,7 +1,9 @@
 import 'reflect-metadata';
+import * as crypto from 'crypto';
 import { Encrypt } from '../src/decorators/encrypt.decorator';
 import { FieldEncryptor } from '../src/field-encryptor';
 import { EncryptionKeyProvider } from '../src/key-provider';
+import { encryptWithDek } from '../src/dek-cipher';
 
 class Contact {
   @Encrypt()
@@ -100,5 +102,21 @@ describe('FieldEncryptor', () => {
     });
 
     await expect(encryptor.encryptTagged(company, 'tenant-1', 0)).rejects.toThrow(/exceeds maxDepth/);
+  });
+
+  // --- // decryptTagged robustness (bug #1) // ---
+
+  it.each([
+    ['an empty-string tagged field', ''],
+    ['a legacy plaintext value written before encryption', '123-45-6789'],
+    ['a value encrypted under a different (rotated) key', encryptWithDek('secret', crypto.randomBytes(32))],
+  ])('decryptTagged tolerates %s without throwing, leaving it untouched', async (_label, value) => {
+    const keyProvider = fakeKeyProvider();
+    const encryptor = new FieldEncryptor(keyProvider);
+    const contact = Object.assign(new Contact(), { ssn: value, publicNote: 'hello' });
+
+    await expect(encryptor.decryptTagged(contact, 'tenant-1')).resolves.toBeUndefined();
+    expect(contact.ssn).toEqual(value);
+    expect(contact.publicNote).toEqual('hello');
   });
 });

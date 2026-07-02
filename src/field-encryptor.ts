@@ -10,14 +10,23 @@ export class FieldEncryptor {
   constructor(private readonly keyProvider: EncryptionKeyProvider) {}
 
   decryptValue(encryptedData: string, dek: Buffer): unknown {
-    const ivAndEncrypted = Buffer.from(encryptedData, 'base64');
-    const iv = ivAndEncrypted.subarray(0, DEK_IV_LENGTH) as Uint8Array;
-    const encryptedText = ivAndEncrypted.subarray(DEK_IV_LENGTH) as Uint8Array;
-    const decipher = crypto.createDecipheriv(DEK_ALGORITHM, dek as unknown as Uint8Array, iv);
-    const decrypted = Buffer.concat([
-      decipher.update(encryptedText) as Uint8Array,
-      decipher.final() as Uint8Array,
-    ]);
+    let decrypted: Buffer;
+    try {
+      const ivAndEncrypted = Buffer.from(encryptedData, 'base64');
+      const iv = ivAndEncrypted.subarray(0, DEK_IV_LENGTH) as Uint8Array;
+      const encryptedText = ivAndEncrypted.subarray(DEK_IV_LENGTH) as Uint8Array;
+      const decipher = crypto.createDecipheriv(DEK_ALGORITHM, dek as unknown as Uint8Array, iv);
+      decrypted = Buffer.concat([
+        decipher.update(encryptedText) as Uint8Array,
+        decipher.final() as Uint8Array,
+      ]);
+    } catch {
+      // Not decryptable under this DEK: an empty/legacy-plaintext value, or one
+      // written under a different key. Return it untouched rather than throwing,
+      // which would 500 the whole response. Mirrors encryptTaggedField's
+      // isEncryptedWithDek idempotency guard on the write side.
+      return encryptedData;
+    }
     try {
       return JSON.parse(decrypted.toString());
     } catch {
