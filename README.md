@@ -99,6 +99,20 @@ export class CreateCustomerDto {
 }
 ```
 
+> **Nested DTOs must use `@Type()`.** `FieldEncryptor` reads the `@Encrypt()`
+> tag off the class prototype, so a nested field is only encrypted when the
+> nested value is a real class instance. `class-transformer` only instantiates
+> a nested object when its property carries `@Type(() => NestedClass)` - without
+> it, the nested object stays a plain object and its tagged fields are silently
+> written as **plaintext**. Always annotate nested DTO properties:
+>
+> ```typescript
+> class CreateCustomerDto {
+>   @Type(() => Address)
+>   address: Address; // Address has an @Encrypt() field
+> }
+> ```
+
 ```typescript
 // customers.controller.ts
 import { Body, Controller, Get, Param, Post, UsePipes, UseInterceptors } from '@nestjs/common';

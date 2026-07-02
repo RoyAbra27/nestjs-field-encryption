@@ -81,6 +81,11 @@ of pre-warming can build it on top of `EncryptionCache`.
 ## Checklist: adding a new encrypted field
 
 1. Add `@Encrypt()` to the DTO/entity property.
+   - If the property lives on a **nested** DTO reached through the HTTP pipe,
+     the parent's property MUST carry `@Type(() => NestedClass)`. `FieldEncryptor`
+     reads the tag off the class prototype, so a nested value only encrypts when
+     `class-transformer` has instantiated it; a plain nested object (no `@Type()`)
+     has its tagged fields silently written as plaintext.
 2. If the field is written outside the HTTP pipe (a background job, a
    script, a seed), make sure that write path also goes through
    `FieldEncryptor.encryptTagged` or the Prisma extension's
