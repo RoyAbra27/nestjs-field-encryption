@@ -62,12 +62,16 @@ export class FieldEncryptor {
       }
       if (!node || typeof node !== 'object') return;
       for (const key of Object.keys(node)) {
-        if (depth > maxDepth && Reflect.getMetadata('encrypt', node, key)) {
+        const tagged = Reflect.getMetadata('encrypt', node, key);
+        if (depth > maxDepth && tagged) {
           throw new Error(
             `FieldEncryptor: tagged field "${key}" found at depth ${depth} which exceeds maxDepth (${maxDepth})`,
           );
         }
-        if (node[key] && typeof node[key] === 'object') walk(node[key], depth + 1);
+        // A tagged field is encrypted whole (as one value), so its subtree is
+        // never walked individually; don't descend into it here either, or a
+        // deeper tag inside it would falsely trip the guard.
+        if (!tagged && node[key] && typeof node[key] === 'object') walk(node[key], depth + 1);
       }
     };
     walk(obj, 0);

@@ -19,6 +19,16 @@ class Company {
   contact: Contact;
 }
 
+class TaggedInner {
+  @Encrypt()
+  secret: string;
+}
+
+class TaggedOuter {
+  @Encrypt()
+  blob: TaggedInner;
+}
+
 function fakeKeyProvider(): EncryptionKeyProvider & { calls: number } {
   const dek = Buffer.from('0123456789abcdef0123456789abcdef', 'utf8').subarray(0, 32);
   return {
@@ -102,6 +112,22 @@ describe('FieldEncryptor', () => {
     });
 
     await expect(encryptor.encryptTagged(company, 'tenant-1', 0)).rejects.toThrow(/exceeds maxDepth/);
+  });
+
+  it('does not throw for a tagged field whose value contains a deeper tagged field (bug #6)', async () => {
+    const keyProvider = fakeKeyProvider();
+    const encryptor = new FieldEncryptor(keyProvider);
+    const outer = Object.assign(new TaggedOuter(), {
+      blob: Object.assign(new TaggedInner(), { secret: 'top-secret' }),
+    });
+
+    // maxDepth 0: `blob` is encrypted whole as one value, so the nested tagged
+    // field is never walked individually and must not trip the depth guard.
+    await expect(encryptor.encryptTagged(outer, 'tenant-1', 0)).resolves.toBeUndefined();
+    expect(typeof outer.blob).toBe('string');
+
+    await encryptor.decryptTagged(outer, 'tenant-1', 0);
+    expect((outer.blob as any).secret).toEqual('top-secret');
   });
 
   // --- // decryptTagged robustness (bug #1) // ---
