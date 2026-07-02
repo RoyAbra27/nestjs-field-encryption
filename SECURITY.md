@@ -17,5 +17,5 @@ Only the latest version published on npm receives security fixes.
 
 This library implements field-level encryption and a KMS-backed key
 provider. It does not implement key rotation, and does not protect against
-a compromised KMS key or database — see `docs/architecture.md` for the full
+a compromised KMS key or database - see `docs/architecture.md` for the full
 threat-model writeup and known gaps.

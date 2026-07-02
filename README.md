@@ -14,12 +14,12 @@ write-encryption extension.
 Field-level encryption in a multi-tenant app looks simple until you actually
 build it. A few ways to get it subtly wrong:
 
-- **Forgetting idempotency** — re-encrypting an already-encrypted value (on a
+- **Forgetting idempotency** - re-encrypting an already-encrypted value (on a
   retried write, or a partial update) produces garbage instead of a no-op.
-- **Forgetting a depth guard** — a naive recursive walk over nested DTOs or
+- **Forgetting a depth guard** - a naive recursive walk over nested DTOs or
   Prisma nested writes can silently skip a tagged field several levels down,
   writing plaintext to a column meant to be encrypted.
-- **Mixing up IV reuse** — reusing an IV across encryptions under the same
+- **Mixing up IV reuse** - reusing an IV across encryptions under the same
   key breaks AES-CBC's confidentiality guarantees. Every encrypt call in this
   library generates a fresh random IV.
 
@@ -32,22 +32,22 @@ npm install nestjs-field-encryption @aws-sdk/client-kms reflect-metadata
 ```
 
 `@nestjs/common`, `class-transformer`, `class-validator`, and `rxjs` are peer
-dependencies — install whichever versions your NestJS app already uses.
+dependencies - install whichever versions your NestJS app already uses.
 
 ## Core concepts
 
-- **`EncryptionKeyProvider`** — resolves a per-tenant data-encryption key
+- **`EncryptionKeyProvider`** - resolves a per-tenant data-encryption key
   (DEK). `KmsKeyProvider` implements this via AWS KMS envelope encryption:
   each tenant's DEK is stored encrypted-at-rest (via your own
   `EncryptedKeyStore`) and unwrapped on demand through a per-tenant KMS key.
-- **`@Encrypt()`** — a property decorator that tags a DTO/entity field for
+- **`@Encrypt()`** - a property decorator that tags a DTO/entity field for
   encryption.
-- **`FieldEncryptor`** — walks an object graph and encrypts/decrypts every
+- **`FieldEncryptor`** - walks an object graph and encrypts/decrypts every
   `@Encrypt()`-tagged field, recursing into nested objects up to a
   configurable depth.
-- **`EncryptPipe` / `DecryptInterceptor`** — wire `FieldEncryptor` into the
+- **`EncryptPipe` / `DecryptInterceptor`** - wire `FieldEncryptor` into the
   NestJS request/response lifecycle automatically.
-- **`createFieldEncryptionExtension`** — a schema-agnostic Prisma extension
+- **`createFieldEncryptionExtension`** - a schema-agnostic Prisma extension
   factory for encrypting columns directly at the database-write layer,
   independent of the HTTP pipe/interceptor.
 
@@ -158,7 +158,7 @@ the database).
 
 ## Further reading
 
-- [docs/architecture.md](docs/architecture.md) — primitives, write/read
+- [docs/architecture.md](docs/architecture.md) - primitives, write/read
   contracts, key management, failure handling, and a checklist for adding a
   new encrypted field.
 - [CONTRIBUTING.md](CONTRIBUTING.md)
