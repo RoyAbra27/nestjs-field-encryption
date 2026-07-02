@@ -74,7 +74,7 @@ export class FieldEncryptor {
     if (obj && typeof obj === 'object') {
       await Promise.all(
         Object.keys(obj).map(async (key) => {
-          if (obj[key] && typeof obj[key] === 'object' && obj[key] !== null) {
+          if (obj[key] && typeof obj[key] === 'object') {
             if (Reflect.getMetadata('encrypt', obj, key)) {
               obj[key] = await this.encryptTaggedField(obj, key, getDek);
             }
