@@ -18,6 +18,32 @@ export function encryptWithDek(data: unknown, dek: Buffer): string {
   return Buffer.concat([iv, encrypted]).toString('base64');
 }
 
+function decipherToBuffer(value: string, dek: Buffer): Buffer {
+  const buf = Buffer.from(value, 'base64');
+  const iv = buf.subarray(0, DEK_IV_LENGTH) as Uint8Array;
+  const encryptedText = buf.subarray(DEK_IV_LENGTH) as Uint8Array;
+  const decipher = crypto.createDecipheriv(DEK_ALGORITHM, dek as unknown as Uint8Array, iv);
+  return Buffer.concat([
+    decipher.update(encryptedText) as Uint8Array,
+    decipher.final() as Uint8Array,
+  ]);
+}
+
+/**
+ * Inverse of `encryptWithDek`: decrypts and JSON-parses the payload back to the
+ * original value. Throws if `value` does not decrypt under `dek`. Falls back to
+ * the raw decrypted string if the plaintext is not JSON (should not happen for
+ * values produced by `encryptWithDek`).
+ */
+export function decryptWithDek(value: string, dek: Buffer): unknown {
+  const decrypted = decipherToBuffer(value, dek);
+  try {
+    return JSON.parse(decrypted.toString());
+  } catch {
+    return decrypted.toString();
+  }
+}
+
 /**
  * True only when `value` decrypts cleanly under `dek` AND the plaintext parses
  * as JSON. `encryptWithDek` always JSON.stringifies, so every genuine ciphertext
@@ -30,14 +56,7 @@ export function isEncryptedWithDek(value: string, dek: Buffer): boolean {
   try {
     const buf = Buffer.from(value, 'base64');
     if (buf.length < DEK_IV_LENGTH * 2) return false;
-    const iv = buf.subarray(0, DEK_IV_LENGTH) as Uint8Array;
-    const encryptedText = buf.subarray(DEK_IV_LENGTH) as Uint8Array;
-    const decipher = crypto.createDecipheriv(DEK_ALGORITHM, dek as unknown as Uint8Array, iv);
-    const decrypted = Buffer.concat([
-      decipher.update(encryptedText) as Uint8Array,
-      decipher.final() as Uint8Array,
-    ]);
-    JSON.parse(decrypted.toString());
+    JSON.parse(decipherToBuffer(value, dek).toString());
     return true;
   } catch {
     return false;

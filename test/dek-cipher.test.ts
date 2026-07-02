@@ -3,6 +3,7 @@ import {
   DEK_ALGORITHM,
   DEK_IV_LENGTH,
   encryptWithDek,
+  decryptWithDek,
   isEncryptedWithDek,
   looksEncrypted,
 } from '../src/dek-cipher';
@@ -48,6 +49,18 @@ describe('encryptWithDek / isEncryptedWithDek round trip', () => {
     const nonJson = Buffer.concat([iv, enc]).toString('base64');
 
     expect(isEncryptedWithDek(nonJson, testDek)).toBe(false);
+  });
+});
+
+describe('decryptWithDek', () => {
+  it('is the inverse of encryptWithDek', () => {
+    const encrypted = encryptWithDek({ hello: 'world', n: 42 }, testDek);
+    expect(decryptWithDek(encrypted, testDek)).toEqual({ hello: 'world', n: 42 });
+  });
+
+  it('throws when the value was not encrypted under the given key', () => {
+    const encrypted = encryptWithDek('secret', testDek);
+    expect(() => decryptWithDek(encrypted, otherDek)).toThrow();
   });
 });
 

@@ -1,4 +1,12 @@
-export { DEK_ALGORITHM, DEK_IV_LENGTH, encryptWithDek, isEncryptedWithDek, looksEncrypted } from './dek-cipher';
+export {
+  DEK_ALGORITHM,
+  DEK_IV_LENGTH,
+  DEK_KEY_LENGTH,
+  encryptWithDek,
+  decryptWithDek,
+  isEncryptedWithDek,
+  looksEncrypted,
+} from './dek-cipher';
 export { Encrypt } from './decorators/encrypt.decorator';
 export { TransformResponseTo } from './decorators/transform-response-to.decorator';
 export { FieldEncryptor, ENCRYPT_MAX_DEPTH } from './field-encryptor';
